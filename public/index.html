@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Κράτηση σε Εστιατόριο</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <h1>🍽️ Σύστημα Κράτησης Τραπεζιού</h1>
+        
+        <div class="card">
+            <h2>Κάντε Κράτηση</h2>
+            <form id="bookingForm">
+                <label>Όνομα Κράτησης:</label>
+                <input type="text" id="name" placeholder="π.χ. Παπαδόπουλος" required>
+
+                <label>Ημερομηνία:</label>
+                <input type="date" id="date" required>
+
+                <label>Ζώνη Ώρας:</label>
+                <select id="timeSlot" required>
+                    <option value="">-- Επιλέξτε ώρα --</option>
+                    <option value="19:00 - 21:00">19:00 - 21:00</option>
+                    <option value="21:00 - 23:00">21:00 - 23:00</option>
+                    <option value="23:00 - 01:00">23:00 - 01:00</option>
+                </select>
+
+                <label>Αριθμός Ατόμων:</label>
+                <input type="number" id="guests" min="1" max="10" placeholder="1-10" required>
+
+                <button type="submit">Επιβεβαίωση Κράτησης</button>
+            </form>
+            <p id="message"></p>
+        </div>
+
+        <div class="card">
+            <h2>Λίστα Κρατήσεων</h2>
+            <ul id="bookingsList"></ul>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('bookingForm');
+        const message = document.getElementById('message');
+        const list = document.getElementById('bookingsList');
+
+        // Λήψη και εμφάνιση κρατήσεων
+        async function fetchBookings() {
+            const res = await fetch('/api/bookings');
+            const bookings = await res.json();
+            list.innerHTML = '';
+            
+            if(bookings.length === 0) {
+                list.innerHTML = '<li>Δεν υπάρχουν κρατήσεις για σήμερα.</li>';
+                return;
+            }
+
+            bookings.forEach(b => {
+                const li = document.createElement('li');
+                li.innerHTML = `📅 <strong>${b.date}</strong> | ⏰ ${b.timeSlot} | 👤 ${b.name} (${b.guests} άτομα)`;
+                list.appendChild(li);
+            });
+        }
+
+        // Υποβολή νέας κράτησης
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const date = document.getElementById('date').value;
+            const timeSlot = document.getElementById('timeSlot').value;
+            const guests = document.getElementById('guests').value;
+
+            const res = await fetch('/api/bookings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, date, timeSlot, guests })
+            });
+
+            const data = await res.json();
+            
+            if (res.ok) {
+                message.innerText = data.message;
+                message.style.color = "green";
+                form.reset();
+                fetchBookings();
+            } else {
+                message.innerText = data.error;
+                message.style.color = "red";
+            }
+        });
+
+        // Αρχική φόρτωση
+        fetchBookings();
+    </script>
+</body>
+</html>
